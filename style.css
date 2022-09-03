@@ -1,0 +1,44 @@
+h1 {
+  color: red;
+}
+
+#popup {
+  width: 580px;
+  height: 800px;
+}
+
+#ticks {
+  position: absolute;
+  left: 800px;
+  top: 200px;
+  width: 400px;
+  height: 300px;
+  border-style: solid;
+  border-width: 1px;
+  padding: 50px;
+}
+
+#refreshGoogleFinance {
+  display: inline-block;
+}
+
+.stopCounter {
+  color: green;
+}
+
+.stopUpdateStats {
+  display: inline;
+  flex: 1;
+  white-space: nowrap;
+}
+
+.SaveRadios {
+  display: inline;
+  flex: 1;
+  white-space: nowrap;
+}
+
+.formrow {
+  display: block;
+  text-align: left;
+}

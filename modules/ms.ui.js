@@ -17,7 +17,7 @@ marketStats.ui = class {
     this.startSecondLastYearMonthDay = this.util.getYearMonthDay(4, this.util.startYearMonthDay);
 
     // Set Data Period
-    this.dataPeriod = StatsPeriod.max_update;
+    this.dataPeriod = STATS_PERIODS.max_update;
     // Add Core Functionality to the Class
     this.mscore = new marketStats.core(SAVE_URL_LOCAL);
 
@@ -144,7 +144,7 @@ marketStats.ui.setup = function () {
   let htmlButtonCondo = $(`<input type="button" id="pid_read_stat_Condo" value="Read Condo">`);
   let htmlButtonAllGroups = $(`<input type="button" id="pid_read_stat_All_Groups" value="Read All 4 Groups">`);
   let htmlButtonUpdate = $(
-    `<input type="button" id="pid_update_stat" value="Monthly Update (${this.iAreaCodePointer} | ${AreaCodes.length})">`
+    `<input type="button" id="pid_update_stat" value="Monthly Update (${this.iAreaCodePointer} | ${AREA_CODES.length})">`
   );
   let htmlButtonUpdateDatePointer = $(
     `<input type="button" id="pid_update_stat_date_point" value="Update Date Pointer">`
@@ -348,7 +348,7 @@ marketStats.ui.events.onClick.AreaCodePointer = function () {
         // move area pointer to 0 /beginning of the list
         // start over
         let htmlButtonUpdate = $("#pid_update_stat");
-        htmlButtonUpdate.val(`Monthly Update (${this.mscore.iAreaCodePointer} | ${AreaCodes.length})`);
+        htmlButtonUpdate.val(`Monthly Update (${this.mscore.iAreaCodePointer} | ${AREA_CODES.length})`);
       }
     );
   });
@@ -513,7 +513,7 @@ marketStats.util.getStatDataPeriod = function () {
   // get the data period setting from the drop-down list
   let ret = $("#pid_data_periods").val();
   console.log("Starting Monthly STAT DATA UPDATE... ...");
-  this.dataPeriod = ret ? StatsPeriod.max_update : ret;
+  this.dataPeriod = ret ? STATS_PERIODS.max_update : ret;
   return ret;
 };
 

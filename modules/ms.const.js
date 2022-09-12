@@ -32,14 +32,14 @@ const REQUEST_TRIES = 2;
 const MORE_DATA_REMAINING = "More DataParts Remaining";
 
 // Stats Centre groupCodes for HPI
-const GroupCodes = ["#0=|", "#0=pt:2|", "#0=pt:8|", "#0=pt:4|"];
-const PropertyTypes = ["All", "Detached", "Townhouse", "Apartment"];
-const StatsPeriod = { monthly_update: "1", max_update: "3" }; // 1 for 24 months stats data; 3 for 48 months stats data
+const GROUP_CODES = ["#0=|", "#0=pt:2|", "#0=pt:8|", "#0=pt:4|"];
+const PROPERTY_TYPES = ["All", "Detached", "Townhouse", "Apartment"];
+const STATS_PERIODS = { monthly_update: "1", max_update: "3" }; // 1 for 24 months stats data; 3 for 48 months stats data
 
-const GetPropertyType = (groupCode) => PropertyTypes[GroupCodes.indexOf(groupCode)];
-const GetGroupCode = (propertyType) => GroupCodes[PropertyTypes.indexOf(propertyType)];
+const GetPropertyType = (groupCode) => PROPERTY_TYPES[GROUP_CODES.indexOf(groupCode)];
+const GetGroupCode = (propertyType) => GROUP_CODES[PROPERTY_TYPES.indexOf(propertyType)];
 
-const GlobalRequestParams = {
+const GLOBAL_REQUEST_PARAMS = {
   ac: "f7b8525e800647a5aab99bfa9c2bb2f7",
   cid: "D6CFF8B05780494FB914B1A270A55F0F",
   s: "b23a1bcecaa648dea9ce46946b16d062",
@@ -48,7 +48,7 @@ const GlobalRequestParams = {
 // AreaCodes : Stat_Code - mapped in table wp_pid_stats_code
 // Real Estate Board's area code is not unique for some reason
 // However stat_code is unique for every area / neighborhood
-const AreaCodes = [
+const AREA_CODES = [
   "FVREB", //stat_code : 5008
   "REBGV", //stat_code : 5009
   "F10", //stat_code : 5035

@@ -7,7 +7,7 @@ marketStats.core = class {
     this.deleteOldData = false;
     this.error = new Error(ERROR_MESSAGE_NO_ERROR);
     this.areaQuantityEveryUpdate = 1;
-    this.statsPeriodLength = StatsPeriod.max_update; // 1:: 24 months; 3:: 48 months
+    this.statsPeriodLength = STATS_PERIODS.max_update; // 1:: 24 months; 3:: 48 months
     this.selectedOptions = {
       calc: "monthly",
       dq: "5035#0=|", // area code(statCode) + group code
@@ -16,7 +16,7 @@ marketStats.core = class {
       period: this.statsPeriodLength, // fetch 4 years / 48 months stats
       view: "100",
     };
-    this.globalRequestParams = GlobalRequestParams;
+    this.globalRequestParams = GLOBAL_REQUEST_PARAMS;
     this.noDataAreaCodes = [];
 
     this.updateServerURLs("local"); // set to local server urls by default
@@ -61,6 +61,73 @@ marketStats.core = class {
   updateServerURLs = marketStats.core.updateServerURLs;
   setReportDwellingType = marketStats.core.setReportDwellingType;
   copyTextToClipboard = marketStats.core.copyTextToClipboard;
+};
+
+//- NEW stat data monthly update
+marketStats.core.updateMonthlyStats = function (statDataPeriod) {
+  console.log("Monthly Update Button Clicked");
+  let i = 0;
+  let iAreaCodePointer = 0;
+  let areaQuantityEveryUpdate = parseInt($("#pid_area_quantity_every_update").val());
+  areaQuantityEveryUpdate = areaQuantityEveryUpdate ? areaQuantityEveryUpdate : 1;
+
+  // 1. get the current iAreaCodePointer from chrome.storage.local
+  // 2. start monthly stats update process
+  chrome.storage.local.get(["iAreaCodePointer"], (res) => startMonthlyUpdates.call(this, res));
+
+  async function startMonthlyUpdates(xInfo) {
+    iAreaCodePointer = xInfo.iAreaCodePointer ? xInfo.iAreaCodePointer : 0; // use to control the loop
+    let statData;
+    let areaCode = AREA_CODES[i];
+    this.error = new Error(ERROR_MESSAGE_NO_ERROR);
+
+    // loop all AreaCodes
+    for (let j = 0; j < areaQuantityEveryUpdate; j++) {
+      areaCode = AREA_CODES[iAreaCodePointer + j]; // j is used to move areaCode pointer, i is the base areaCode Pointer
+      // Loop: go for next areaCode
+      console.group(`AreaCode ${areaCode} Loop:#${j + 1} of ${areaQuantityEveryUpdate}`);
+      //loop all groups
+      try {
+        statData = await this.updateSpecAreaStats(statDataPeriod, areaCode);
+      } catch (err) {
+        console.log(err.err?.message);
+        console.groupEnd(); //= 终止前一个console group
+      }
+
+      // if (statData.err.message === ERROR_MESSAGE_NO_ERROR || statData.err.message.indexOf("Fatal") === -1) {
+      // if there is no fatal errors, set next iAreaCodePointer to chrome local storage
+      let saveAreaPointerResult = await chrome.storage.local.set({ iAreaCodePointer: iAreaCodePointer + 1 + j });
+      console.log(`区域指针iAreaCodePointer已经保存到LocalStorge: ${iAreaCodePointer + 1 + j}`);
+      // update the button message
+      this.iAreaCodePointer++;
+      let htmlButtonUpdate = $("#pid_update_stat");
+      htmlButtonUpdate.val(`Monthly Update (${this.iAreaCodePointer} | ${AREA_CODES.length})`);
+      // }
+      console.groupEnd();
+    }
+    console.log("%cStats Data Request Task All Done!", "background: #76ff7a; color: #648c11");
+    console.log(this.noDataAreaCodes);
+  }
+};
+
+//- stat data Update for all 4 groups of a specific areaCode
+marketStats.core.updateSpecAreaStats = async function (statDataPeriod, areaCode) {
+  let statData;
+  console.group(`Specific Area:${areaCode} DataPeriod:${statDataPeriod} All Groups - Update Button Clicked`);
+
+  this.error = new Error(ERROR_MESSAGE_NO_ERROR);
+  for (let index = 0; index < GROUP_CODES.length; index++) {
+    let groupCode = GROUP_CODES[index];
+    try {
+      statData = await this.updateSpecGroupStats(statDataPeriod, areaCode, groupCode);
+    } catch (err) {
+      console.log(`UpdateSpecAreaStats Error: ${err.err?.message}`);
+    }
+  }
+  console.log(`%cSpecific Area: ${areaCode} REBGV Data UPDATE Done!`, "background: #76ff7a; color: #648c11");
+  console.groupEnd();
+
+  return statData;
 };
 
 //- 功能: update the stats data for a specific group of one selected Area
@@ -131,72 +198,6 @@ marketStats.core.updateSpecGroupStats = async function (statDataPeriod, areaCode
   return statData;
 };
 
-//- stat data Update for all 4 groups of a specific areaCode
-marketStats.core.updateSpecAreaStats = async function (statDataPeriod, areaCode) {
-  let statData;
-  console.group(`Specific Area:${areaCode} DataPeriod:${statDataPeriod} All Groups - Update Button Clicked`);
-
-  this.error = new Error(ERROR_MESSAGE_NO_ERROR);
-  for (let index = 0; index < GroupCodes.length; index++) {
-    let groupCode = GroupCodes[index];
-    try {
-      statData = await this.updateSpecGroupStats(statDataPeriod, areaCode, groupCode);
-    } catch (err) {
-      console.log(`${err.err.message}`);
-    }
-  }
-  console.log(`%cSpecific Area: ${areaCode} REBGV Data UPDATE Done!`, "background: #76ff7a; color: #648c11");
-  console.groupEnd();
-
-  return statData;
-};
-
-//- NEW stat data monthly update
-marketStats.core.updateMonthlyStats = function (statDataPeriod) {
-  console.log("Monthly Update Button Clicked");
-  let i = 0;
-  let iAreaCodePointer = 0;
-  let areaQuantityEveryUpdate = parseInt($("#pid_area_quantity_every_update").val());
-  areaQuantityEveryUpdate = areaQuantityEveryUpdate ? areaQuantityEveryUpdate : 1;
-
-  // 1. get the current iAreaCodePointer from chrome.storage.local
-  // 2. start monthly stats update process
-  chrome.storage.local.get(["iAreaCodePointer"], (res) => startMonthlyUpdates.call(this, res));
-
-  async function startMonthlyUpdates(xInfo) {
-    iAreaCodePointer = xInfo.iAreaCodePointer ? xInfo.iAreaCodePointer : 0; // use to control the loop
-    let statData;
-    let areaCode = AreaCodes[i];
-    this.error = new Error(ERROR_MESSAGE_NO_ERROR);
-
-    // loop all AreaCodes
-    for (let j = 0; j < areaQuantityEveryUpdate; j++) {
-      areaCode = AreaCodes[iAreaCodePointer + j]; // j is used to move areaCode pointer, i is the base areaCode Pointer
-      // Loop: go for next areaCode
-      console.group(`AreaCode ${areaCode} Loop:#${j + 1} of ${areaQuantityEveryUpdate}`);
-      //loop all groups
-      try {
-        statData = await this.updateSpecAreaStats(statDataPeriod, areaCode);
-      } catch (err) {
-        console.log(err.err?.message);
-      }
-
-      // if (statData.err.message === ERROR_MESSAGE_NO_ERROR || statData.err.message.indexOf("Fatal") === -1) {
-      // if there is no fatal errors, set next iAreaCodePointer to chrome local storage
-      let saveAreaPointerResult = await chrome.storage.local.set({ iAreaCodePointer: iAreaCodePointer + 1 + j });
-      console.log(`区域指针iAreaCodePointer已经保存到LocalStorge:${saveAreaPointerResult}`);
-      // update the button message
-      this.iAreaCodePointer++;
-      let htmlButtonUpdate = $("#pid_update_stat");
-      htmlButtonUpdate.val(`Monthly Update (${this.iAreaCodePointer} | ${AreaCodes.length})`);
-      // }
-      console.groupEnd();
-    }
-    console.log("%cStats Data Request Task All Done!", "background: #76ff7a; color: #648c11");
-    console.log(this.noDataAreaCodes);
-  }
-};
-
 marketStats.core.searchStatCode = async function (areaCode, groupCode = "") {
   let statCode;
   // Translate the StatsCentre group code to Property type
@@ -254,32 +255,33 @@ marketStats.core.requestStatData = async function (selectedOptions, globalReques
       //- 现在fetch已经可以正常使用了. 不过似乎获取数据的失败几率比较高
       statInfo = await marketStats.core.fetchStatData(requestData, currentDataRequest);
       // statInfo = await marketStats.core.ajaxStatDataPromise.call(this, requestData, currentDataRequest);
+      //- 函数处理的错误信息包含在返回的数据包statInfo.err里面
+      statInfo = await marketStats.core.processStatData.call(this, statInfo.Payload);
+      //- 处理返回数据包
+      if (statInfo.status === "OK") {
+        // Stat Data Request and Process Succeed
+        return Promise.resolve(statInfo);
+      } else {
+        if (statInfo.status === "NO_DATA" || statInfo.status === "NO_STATS_DATA") {
+          if (i === REQUEST_TRIES - 1) {
+            //- 多次数据请求失败, 返回调用函数:
+            console.log(`Last DataRequest Try:`, statInfo.err.message);
+            return Promise.reject(statInfo);
+          } else {
+            //- 本次数据请求失败, 再试一次:
+            console.log(`[${i + 1}] Try More Requests:`, statInfo.err.message);
+          }
+        } else {
+          return Promise.reject(statInfo);
+        }
+      }
     } catch (err) {
       // fatal errors:
-      console.log("ProcessDataRequest Fatal Error:", err.message);
+      console.log("RequestStatData Fatal Error:", err.message);
       //- 把statInfo更改成一个err对象
       statInfo = new Error(ERROR_MESSAGE_DATA_FATAL);
-    }
-
-    //- 函数处理的错误信息包含在返回的数据包statInfo.err里面
-    statInfo = await marketStats.core.processStatData.call(this, statInfo.Payload);
-
-    if (statInfo.status === "OK") {
-      // Stat Data Request and Process Succeed
-      return Promise.resolve(statInfo);
-    } else {
-      if (statInfo.status === "NO_DATA" || statInfo.status === "NO_STATS_DATA") {
-        if (i === REQUEST_TRIES - 1) {
-          //- 多次数据请求失败, 返回调用函数:
-          console.log(`Last DataRequest Try:`, statInfo.err.message);
-          return Promise.reject(statInfo);
-        } else {
-          //- 本次数据请求失败, 再试一次:
-          console.log(`[${i + 1}] Try More Requests:`, statInfo.err.message);
-        }
-      } else {
-        return Promise.reject(statInfo);
-      }
+      statInfo.err = err;
+      throw statInfo;
     }
   }
 };
@@ -402,70 +404,6 @@ marketStats.core.copyTextToClipboard = function (text) {
   );
 };
 
-// Promise Wrapper for ajax call
-// Fetch Stat Data from Stats Centre API
-marketStats.core.ajaxStatDataPromise = function (requestData, currentDataRequest) {
-  if (currentDataRequest) currentDataRequest.abort();
-  const backendDataUrl = "/infoserv/sparks";
-  let moreDataParts = [];
-
-  let ajaxCall = new Promise((res, rej) => {
-    currentDataRequest = $.ajax({
-      type: "POST",
-      url: backendDataUrl,
-      dataType: "json",
-      data: requestData,
-      async: true, //enable/disable async ajax call
-      success: (data, textStatus, jqXHR) =>
-        marketStats.core.ajaxResolve(data, textStatus, jqXHR, requestData, moreDataParts, res),
-      error: (jqXHR, textStatus, error) =>
-        marketStats.core.ajaxReject(jqXHR, textStatus, error, requestData, moreDataParts, rej),
-    });
-  });
-
-  return ajaxCall;
-};
-
-marketStats.core.ajaxResolve = async function (data, textStatus, jqXHR, requestData, moreDataParts, res) {
-  if (data.ResponseType === "MULTIPART") {
-    var nextPart = data.TotalParts - data.RemainingParts;
-
-    for (let i = data.RemainingParts; i > 0; i--) {
-      console.warn(`${MORE_DATA_REMAINING}: ${data.RemainingParts}`);
-
-      var newRequestData = $.extend(
-        {
-          nxt: nextPart,
-          rid: data.ResponseID,
-        },
-        requestData
-      );
-
-      // Send request for more data
-      moreDataParts = moreDataParts.concat(data.Payload);
-      let moreDataPart = await marketStats.core.ajaxStatDataPromise(newRequestData);
-      moreDataParts = moreDataParts.concat(moreDataPart.Payload);
-      // RemainingParts will passed from the inner call, its state is used to break the Loop
-      if (moreDataPart.RemainingParts === 0) {
-        data.Payload = moreDataParts;
-        break;
-      }
-    }
-    // resolve the assembled data
-    res(data);
-  }
-};
-
-// Function for handling fatal error
-marketStats.core.ajaxReject = function (jqXHR, textStatus, error, requestData, moreDataParts, rej) {
-  if (textStatus !== "abort") {
-    var response = jQuery.parseJSON(jqXHR.responseText);
-    let errMsg = ERROR_MESSAGE_DATA_FATAL;
-    let err = new Error(errMsg);
-    rej(err); // to do list: no callback any more
-  }
-};
-
 //- 无法工作, Stats Center服务器返回Status Code: http 500 Internal Server Error
 marketStats.core.fetchStatData = async function (requestData, currentDataRequest) {
   const options = {
@@ -485,7 +423,8 @@ marketStats.core.fetchStatData = async function (requestData, currentDataRequest
     const res = await fetch(url, options);
     const statCode = await res.json();
     if (!!statCode.Errors && statCode.Errors[0].Message === "System Error") {
-      return Promise.rejct(new Error("System Error"));
+      //- 这是远端服务器对http请求返回的错误, js的try-catch无法捕捉到:
+      return Promise.reject(new Error("System Error"));
     } else {
       return Promise.resolve(statCode);
     }
@@ -548,4 +487,68 @@ marketStats.core.processStatData = function (statDataParts) {
       }
     }
   });
+};
+
+// Promise Wrapper for ajax call
+// Fetch Stat Data from Stats Centre API
+marketStats.core.ajaxStatDataPromise = function (requestData, currentDataRequest) {
+  if (currentDataRequest) currentDataRequest.abort();
+  const backendDataUrl = "/infoserv/sparks";
+  let moreDataParts = [];
+
+  let ajaxCall = new Promise((res, rej) => {
+    currentDataRequest = $.ajax({
+      type: "POST",
+      url: backendDataUrl,
+      dataType: "json",
+      data: requestData,
+      async: true, //enable/disable async ajax call
+      success: (data, textStatus, jqXHR) =>
+        marketStats.core.ajaxResolve(data, textStatus, jqXHR, requestData, moreDataParts, res),
+      error: (jqXHR, textStatus, error) =>
+        marketStats.core.ajaxReject(jqXHR, textStatus, error, requestData, moreDataParts, rej),
+    });
+  });
+
+  return ajaxCall;
+};
+
+marketStats.core.ajaxResolve = async function (data, textStatus, jqXHR, requestData, moreDataParts, res) {
+  if (data.ResponseType === "MULTIPART") {
+    var nextPart = data.TotalParts - data.RemainingParts;
+
+    for (let i = data.RemainingParts; i > 0; i--) {
+      console.warn(`${MORE_DATA_REMAINING}: ${data.RemainingParts}`);
+
+      var newRequestData = $.extend(
+        {
+          nxt: nextPart,
+          rid: data.ResponseID,
+        },
+        requestData
+      );
+
+      // Send request for more data
+      moreDataParts = moreDataParts.concat(data.Payload);
+      let moreDataPart = await marketStats.core.ajaxStatDataPromise(newRequestData);
+      moreDataParts = moreDataParts.concat(moreDataPart.Payload);
+      // RemainingParts will passed from the inner call, its state is used to break the Loop
+      if (moreDataPart.RemainingParts === 0) {
+        data.Payload = moreDataParts;
+        break;
+      }
+    }
+    // resolve the assembled data
+    res(data);
+  }
+};
+
+// Function for handling fatal error
+marketStats.core.ajaxReject = function (jqXHR, textStatus, error, requestData, moreDataParts, rej) {
+  if (textStatus !== "abort") {
+    var response = jQuery.parseJSON(jqXHR.responseText);
+    let errMsg = ERROR_MESSAGE_DATA_FATAL;
+    let err = new Error(errMsg);
+    rej(err); // to do list: no callback any more
+  }
 };

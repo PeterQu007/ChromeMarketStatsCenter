@@ -17,6 +17,7 @@ marketStats.core = class {
       view: "100",
     };
     this.globalRequestParams = GlobalRequestParams;
+    this.noDataAreaCodes = [];
 
     this.updateServerURLs("local"); // set to local server urls by default
 
@@ -91,17 +92,27 @@ marketStats.core.updateSpecGroupStats = async function (statDataPeriod, areaCode
     this.areaCode = areaCode;
     this.selectedOptions.dq = this.statCodeInfo.stat_code + groupCode;
     this.selectedOptions.period = statDataPeriod;
+    //- 请求某一个社区(areacode)的某一组数据
     statData = await this.requestStatData(this.selectedOptions, this.globalRequestParams);
   } catch (err) {
-    this.error = err;
-    console.error(areaCode, groupCode, err.message);
+    //- 这里是最底层的数据请求错误
+    this.error = err.err; // error object被包装在err.err这个property里面
+    console.error(`${areaCode} - ${err.areaName}: ${groupCode}, ${err.err.message}`);
+    this.noDataAreaCodes.push({
+      areaCode: areaCode,
+      areaName: err.areaName,
+      groupCode: groupCode,
+      propertyType: err.propertyType,
+      message: err.err.message,
+    });
     // if err.message === NO_DATA
     // update backend MySQL Table wp_pid_stat_code groupCode to 0
     if (this.statCodeInfo[propertyType] && err.message === ERROR_MESSAGE_NO_STAT_DATA) {
-      this.updateStatCode(areaCode, propertyType, false);
+      //- 不再更改这个状态标记 @2022-09-11
+      //- this.updateStatCode(areaCode, propertyType, false);
     }
     console.groupEnd();
-    return;
+    throw err;
   }
 
   // 3. save the statData to MySql Database
@@ -112,23 +123,32 @@ marketStats.core.updateSpecGroupStats = async function (statDataPeriod, areaCode
     this.error = err;
     console.error(areaCode, groupCode, err);
     console.groupEnd();
-    return;
+    throw err;
   }
 
   console.groupEnd();
+
+  return statData;
 };
 
 //- stat data Update for all 4 groups of a specific areaCode
 marketStats.core.updateSpecAreaStats = async function (statDataPeriod, areaCode) {
+  let statData;
   console.group(`Specific Area:${areaCode} DataPeriod:${statDataPeriod} All Groups - Update Button Clicked`);
 
   this.error = new Error(ERROR_MESSAGE_NO_ERROR);
   for (let index = 0; index < GroupCodes.length; index++) {
     let groupCode = GroupCodes[index];
-    await this.updateSpecGroupStats(statDataPeriod, areaCode, groupCode);
+    try {
+      statData = await this.updateSpecGroupStats(statDataPeriod, areaCode, groupCode);
+    } catch (err) {
+      console.log(`${err.err.message}`);
+    }
   }
-  console.warn(`Specific Area: ${areaCode} REBGV Data UPDATE Done!`);
+  console.log(`%cSpecific Area: ${areaCode} REBGV Data UPDATE Done!`, "background: #76ff7a; color: #648c11");
   console.groupEnd();
+
+  return statData;
 };
 
 //- NEW stat data monthly update
@@ -145,7 +165,7 @@ marketStats.core.updateMonthlyStats = function (statDataPeriod) {
 
   async function startMonthlyUpdates(xInfo) {
     iAreaCodePointer = xInfo.iAreaCodePointer ? xInfo.iAreaCodePointer : 0; // use to control the loop
-
+    let statData;
     let areaCode = AreaCodes[i];
     this.error = new Error(ERROR_MESSAGE_NO_ERROR);
 
@@ -155,19 +175,25 @@ marketStats.core.updateMonthlyStats = function (statDataPeriod) {
       // Loop: go for next areaCode
       console.group(`AreaCode ${areaCode} Loop:#${j + 1} of ${areaQuantityEveryUpdate}`);
       //loop all groups
-      await this.updateSpecAreaStats(statDataPeriod, areaCode);
-
-      if (this.error.message === ERROR_MESSAGE_NO_ERROR || this.error.message.indexOf("Fatal") === -1) {
-        // if there is no fatal errors, set next iAreaCodePointer to chrome local storage
-        let saveAreaPointerResult = await chrome.storage.local.set(iAreaCodePointer + 1 + j);
-        // update the button message
-        this.iAreaCodePointer++;
-        let htmlButtonUpdate = $("#pid_update_stat");
-        htmlButtonUpdate.val(`Monthly Update (${this.iAreaCodePointer} | ${AreaCodes.length})`);
+      try {
+        statData = await this.updateSpecAreaStats(statDataPeriod, areaCode);
+      } catch (err) {
+        console.log(err.err?.message);
       }
+
+      // if (statData.err.message === ERROR_MESSAGE_NO_ERROR || statData.err.message.indexOf("Fatal") === -1) {
+      // if there is no fatal errors, set next iAreaCodePointer to chrome local storage
+      let saveAreaPointerResult = await chrome.storage.local.set({ iAreaCodePointer: iAreaCodePointer + 1 + j });
+      console.log(`区域指针iAreaCodePointer已经保存到LocalStorge:${saveAreaPointerResult}`);
+      // update the button message
+      this.iAreaCodePointer++;
+      let htmlButtonUpdate = $("#pid_update_stat");
+      htmlButtonUpdate.val(`Monthly Update (${this.iAreaCodePointer} | ${AreaCodes.length})`);
+      // }
       console.groupEnd();
     }
-    console.warn("Stats Data Request Task All Done!");
+    console.log("%cStats Data Request Task All Done!", "background: #76ff7a; color: #648c11");
+    console.log(this.noDataAreaCodes);
   }
 };
 
@@ -202,6 +228,8 @@ marketStats.core.searchStatCode = async function (areaCode, groupCode = "") {
   }
 };
 
+//- 功能: 数据请求和数据处理
+//- 错误信息包含在返回数据包的err属性里面
 marketStats.core.requestStatData = async function (selectedOptions, globalRequestParams) {
   var requestData;
   var currentDataRequest;
@@ -216,32 +244,41 @@ marketStats.core.requestStatData = async function (selectedOptions, globalReques
   // Initial send request
   let statInfo;
   // Per Request_Tries, if stats data is not correct try once more
-  for (let i = 0; i < REQUEST_TRIES; i++) {
+  for (let i = 0; i <= REQUEST_TRIES; i++) {
+    //- 如果是第二次尝试, 等待3秒钟再试:
+    if (i > 0) {
+      let localWait = await marketStats.util.sleep(3000); // 等待3秒钟
+    }
     try {
-      //- 无法使用fetch获取数据
+      //- 本来无法使用fetch获取数据, 根据对比ajaxCall和fetch的HTTP数据包的差异, 调整成一样的参数
+      //- 现在fetch已经可以正常使用了. 不过似乎获取数据的失败几率比较高
       statInfo = await marketStats.core.fetchStatData(requestData, currentDataRequest);
       // statInfo = await marketStats.core.ajaxStatDataPromise.call(this, requestData, currentDataRequest);
     } catch (err) {
       // fatal errors:
       console.log("ProcessDataRequest Fatal Error:", err.message);
+      //- 把statInfo更改成一个err对象
       statInfo = new Error(ERROR_MESSAGE_DATA_FATAL);
     }
 
+    //- 函数处理的错误信息包含在返回的数据包statInfo.err里面
     statInfo = await marketStats.core.processStatData.call(this, statInfo.Payload);
 
     if (statInfo.status === "OK") {
       // Stat Data Request and Process Succeed
       return Promise.resolve(statInfo);
     } else {
-      if (statInfo.status === "NO_DATA") {
+      if (statInfo.status === "NO_DATA" || statInfo.status === "NO_STATS_DATA") {
         if (i === REQUEST_TRIES - 1) {
+          //- 多次数据请求失败, 返回调用函数:
           console.log(`Last DataRequest Try:`, statInfo.err.message);
-          return Promise.reject(statInfo.err);
+          return Promise.reject(statInfo);
         } else {
+          //- 本次数据请求失败, 再试一次:
           console.log(`[${i + 1}] Try More Requests:`, statInfo.err.message);
         }
       } else {
-        return Promise.reject(statInfo.err);
+        return Promise.reject(statInfo);
       }
     }
   }
@@ -365,31 +402,6 @@ marketStats.core.copyTextToClipboard = function (text) {
   );
 };
 
-//- 无法工作, Stats Center服务器返回Status Code: http 500 Internal Server Error
-marketStats.core.fetchStatData = async function (requestData, currentDataRequest) {
-  const options = {
-    method: "POST",
-    credentials: "same-origin",
-    headers: {
-      "X-Requested-With": "XMLHttpRequest",
-      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      Accept: "application/json, text/javascript, */*; q=0.01",
-    },
-    body: marketStats.util.serialize(requestData),
-  };
-  // const url =
-  //   "http://localhost/pidrealty4/wp-content/themes/realhomes-child-3/db/data.php";
-  const url = "/infoserv/sparks";
-  try {
-    const res = await fetch(url, options);
-    const statCode = await res.json();
-    return Promise.resolve(statCode);
-  } catch (err) {
-    let error = { stat_code: null, errorMessage: err.message };
-    return Promise.reject(error);
-  }
-};
-
 // Promise Wrapper for ajax call
 // Fetch Stat Data from Stats Centre API
 marketStats.core.ajaxStatDataPromise = function (requestData, currentDataRequest) {
@@ -454,6 +466,35 @@ marketStats.core.ajaxReject = function (jqXHR, textStatus, error, requestData, m
   }
 };
 
+//- 无法工作, Stats Center服务器返回Status Code: http 500 Internal Server Error
+marketStats.core.fetchStatData = async function (requestData, currentDataRequest) {
+  const options = {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "X-Requested-With": "XMLHttpRequest",
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      Accept: "application/json, text/javascript, */*; q=0.01",
+    },
+    body: marketStats.util.serialize(requestData),
+  };
+  // const url =
+  //   "http://localhost/pidrealty4/wp-content/themes/realhomes-child-3/db/data.php";
+  const url = "/infoserv/sparks";
+  try {
+    const res = await fetch(url, options);
+    const statCode = await res.json();
+    if (!!statCode.Errors && statCode.Errors[0].Message === "System Error") {
+      return Promise.rejct(new Error("System Error"));
+    } else {
+      return Promise.resolve(statCode);
+    }
+  } catch (err) {
+    let error = { stat_code: null, message: err.message };
+    return Promise.reject(error);
+  }
+};
+
 // Process Stat Data
 marketStats.core.processStatData = function (statDataParts) {
   let statDataInfo;
@@ -463,9 +504,11 @@ marketStats.core.processStatData = function (statDataParts) {
   // 4 Types are: "SERIES_DATA","SERIES_CATEGORIES","DATA_PARTS","QUICKSTATS"
   // Loop to get Type SERIES_DATA
   let SERIES_DATA = statDataParts.filter((statItem) => statItem.Type === "SERIES_DATA");
+  let QuickStats = statDataParts.filter((statItem) => statItem.Type === "QUICKSTATS");
+  let areaCodeAndName = QuickStats[0]?.BreakoutHeader;
   // data status should be "OK" for a normal request
   let status = SERIES_DATA.length > 0 ? SERIES_DATA[0].Status : ERROR_MESSAGE_NO_STAT_DATA;
-  let areaName = SERIES_DATA.length > 0 ? SERIES_DATA[0].Name : ERROR_MESSAGE_NO_STAT_DATA;
+  let areaName = SERIES_DATA.length > 0 ? SERIES_DATA[0].Name : areaCodeAndName;
   let seriesData = SERIES_DATA.length > 0 ? SERIES_DATA[0].Data : [];
   // precess the data payload
   // contains 4 arrays - normal state
@@ -481,6 +524,7 @@ marketStats.core.processStatData = function (statDataParts) {
     deleteOldData: this.deleteOldData,
     action: "Save Stat Data",
     status: status,
+    areaName: areaName,
     err: new Error(ERROR_MESSAGE_NO_ERROR),
   };
   console.log(statDataInfo.propertyType, areaName, status, seriesData);
@@ -491,13 +535,15 @@ marketStats.core.processStatData = function (statDataParts) {
       status === "OK"
     ) {
       console.log(MSG_CORRECT_STAT_DATA);
+      //- 返回的数据包里面包含一个err对象, ERROR_MESSAGE_NO_ERROR
       res(statDataInfo); // resolved promise
     } else {
       // server does not return correct stats data
       // do not send reject error info, try again
-      if (status === "NO_DATA") {
+      if (status === "NO_DATA" || status === "NO_STATS_DATA") {
+        //- 这是最底层的数据请求错误
         statDataInfo.err = new Error(ERROR_MESSAGE_NO_STAT_DATA);
-        console.warn(`${statDataInfo.propertyType}: ${statDataInfo.err.message}`);
+        console.warn(`${statDataInfo.areaName} - ${statDataInfo.propertyType}: ${statDataInfo.err.message}`);
         res(statDataInfo);
       }
     }

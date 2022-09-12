@@ -525,3 +525,7 @@ marketStats.util.serialize = function (obj) {
     }
   return str.join("&");
 };
+
+marketStats.util.sleep = function (miliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, miliseconds));
+};

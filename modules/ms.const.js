@@ -28,7 +28,7 @@ const ERROR_MESSAGE_NO_ERROR = "";
 const ERROR_MESSAGE_DATA_OK = "StatsData Request Succeed";
 const MSG_CORRECT_STAT_DATA = "Correct StatsData Returned";
 const ERROR_MESSAGE_NO_STAT_DATA = "NO_STATS_DATA";
-const REQUEST_TRIES = 1;
+const REQUEST_TRIES = 2;
 const MORE_DATA_REMAINING = "More DataParts Remaining";
 
 // Stats Centre groupCodes for HPI

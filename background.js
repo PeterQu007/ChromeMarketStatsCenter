@@ -9,6 +9,15 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     saveStatData(request).then((res) => sendResponse(res));
   }
 
+  if (request.action && request.action === "Save Stat Data Of All Metrics") {
+    saveStatDataOfAllMetrics(request)
+      .then((res) => sendResponse(res))
+      .catch((e) => {
+        console.log(e);
+        sendResponse("SaveDataError");
+      });
+  }
+
   if (request.action && request.action === "Update Stat Code") {
     updateStatCode(request).then((res) => sendResponse(res));
   }
@@ -122,5 +131,21 @@ async function saveStatData(postData) {
   let res = await fetch(url, options); // PHP should return json object, by json_decode()
   const saveDataResult = await res.json();
   console.log(`${postData.areaCode}:${postData.propertyType}:${saveDataResult}`);
+  return Promise.resolve(saveDataResult);
+}
+
+async function saveStatDataOfAllMetrics(postData) {
+  // place the stat data from StatsCentre to MySQL Database Table
+  const options = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(postData),
+  };
+  const url = postData.saveURLOfAllMetrics;
+  let res = await fetch(url, options); // PHP should return json object, by json_decode()
+  const saveDataResult = await res.json();
+  console.log(`${saveDataResult}`);
   return Promise.resolve(saveDataResult);
 }

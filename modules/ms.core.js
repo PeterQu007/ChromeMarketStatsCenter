@@ -1,5 +1,5 @@
 marketStats.core = class {
-  constructor(saveURL) {
+  constructor() {
     this.statCodeInfo = ""; // an area code provide by statsCentre, data is stored in MYSQL table: wp_pid_stats_code
     this.areaCode = "";
     this.propertyType = ""; // for get stat data
@@ -12,6 +12,7 @@ marketStats.core = class {
       calc: "monthly",
       dq: "5035#0=|", // area code(statCode) + group code
       metrics: ["hpi", "asp", "msp", "adom", "mdom", "inv", "nl", "cs", "star", "tsp", "mpsf", "apsf"],
+      // metrics: ["hpi", "asp", "msp"], 用于程序测试
       m: "hpi", // default metric is hpi
       min: 1,
       period: this.statsPeriodLength, // fetch 4 years / 48 months stats
@@ -20,7 +21,7 @@ marketStats.core = class {
     this.globalRequestParams = GLOBAL_REQUEST_PARAMS;
     this.noDataAreaCodes = [];
 
-    this.updateServerURLs("local"); // set to local server urls by default
+    this.updateServerURLs("local_multisites"); // set to local server urls by default
 
     this.statCode = { search: this.searchStatCode, update: this.updateStatCode };
     this.statDatePointers = { update: this.updateStatDatePointers };
@@ -55,6 +56,7 @@ marketStats.core = class {
   searchStatCode = marketStats.core.searchStatCode;
   requestStatData = marketStats.core.requestStatData;
   saveStatData = marketStats.core.saveStatData;
+  saveStatDataOfAllMetrics = marketStats.core.saveStatDataOfAllMetrics;
   updateStatCode = marketStats.core.updateStatCode;
   updateStatDatePointers = marketStats.core.updateStatDatePointers;
   updateREMarketPivot = marketStats.core.updateREMarketPivot;
@@ -176,12 +178,13 @@ marketStats.core.updateSpecGroupStats = async function (statDataPeriod, areaCode
     } catch (err) {
       //- 这里是最底层的数据请求错误
       this.error = err.err; // error object被包装在err.err这个property里面
-      console.error(`${areaCode} - ${err.areaName}: ${groupCode}, ${err.err.message}`);
+      console.error(`${areaCode} - ${err.areaName}: ${propertyType} ${groupCode}, ${metric}, ${err.err.message}`);
       this.noDataAreaCodes.push({
         areaCode: areaCode,
         areaName: err.areaName,
         groupCode: groupCode,
         propertyType: err.propertyType,
+        metric: metric,
         message: err.err.message,
       });
       // if err.message === NO_DATA
@@ -190,8 +193,8 @@ marketStats.core.updateSpecGroupStats = async function (statDataPeriod, areaCode
         //- 不再更改这个状态标记 @2022-09-11
         //- this.updateStatCode(areaCode, propertyType, false);
       }
-      console.groupEnd();
-      throw err;
+      //- console.groupEnd();
+      //- throw err;
     }
   }
 
@@ -200,7 +203,7 @@ marketStats.core.updateSpecGroupStats = async function (statDataPeriod, areaCode
   try {
     // let saveDataResult = await this.saveStatData(statData); //= 保存单一的一组数据, 比如hpi
     let saveDataResult = await this.saveStatDataOfAllMetrics(statDataByMetrics); //= 保存全部数据指标的数据, 包含hpi,asp,msp等等
-    console.log(saveDataResult);
+    console.log(`%c保存数据函数:${saveDataResult}`, "color: blue");
   } catch (err) {
     this.error = err;
     console.error(areaCode, groupCode, err);
@@ -383,6 +386,7 @@ marketStats.core.processStatData = function (statDataParts) {
   let status = SERIES_DATA.length > 0 ? SERIES_DATA[0].Status : ERROR_MESSAGE_NO_STAT_DATA;
   let areaName = SERIES_DATA.length > 0 ? SERIES_DATA[0].Name : areaCodeAndName;
   let seriesData = SERIES_DATA.length > 0 ? SERIES_DATA[0].Data : [];
+  let seriesDataCheckSum = seriesData.reduce((acc, dataItem) => acc + dataItem);
   // precess the data payload
   // contains 4 arrays - normal state
   // contains 2 arrays - if no summary data, normal state
@@ -402,10 +406,10 @@ marketStats.core.processStatData = function (statDataParts) {
   };
   //- 显示数据处理进程:
   console.log(
-    `%c[2/2]处理获取的数据: ${statDataInfo.propertyType}, ${areaName}, ${status}, 数据长度: ${seriesData.length}`,
+    `%c[2/2]处理获取的数据: ${statDataInfo.propertyType}, ${areaName}, ${status}, 数据长度: ${seriesData.length}, 数据总和: ${seriesDataCheckSum}`,
     "background: #d8ecf3"
   );
-  console.log(`${seriesData}`); //= 单独显示数据
+  // console.log(`${seriesData}`); //= 单独显示数据
   //- 函数返回
   return new Promise((res, rej) => {
     if (
@@ -438,11 +442,14 @@ marketStats.core.saveStatData = async function (statDataInfo) {
 };
 
 marketStats.core.saveStatDataOfAllMetrics = async function (statDataInfoOfAllMetrics) {
-  if (!statDataInfoOfAllMetrics.statData) {
-    console.log("stat read error!");
-    return;
-  }
-  let saveStatDataResult = await chrome.runtime.sendMessage(statDataInfoOfAllMetrics);
+  //- 函数的参数是一个数组
+  //- 准备数据包
+  let statDataInfo = {
+    action: "Save Stat Data Of All Metrics",
+    saveURLOfAllMetrics: this.saveURLOfAllMetrics,
+    statData: statDataInfoOfAllMetrics,
+  };
+  let saveStatDataResult = await chrome.runtime.sendMessage(statDataInfo);
   return Promise.resolve(saveStatDataResult);
 };
 
@@ -516,6 +523,7 @@ marketStats.core.updateServerURLs = function (serverLocation) {
   switch (serverLocation.toLowerCase()) {
     case "local":
       this.saveURL = SAVE_URL_LOCAL; // save the stat data to wp_pid_market locally
+      this.saveURLOfAllMetrics = SAVE_URL_LOCAL_OF_ALL_METRICS;
       this.searchStatCodeURL = SEARCH_URL_STAT_CODE_LOCAL;
       this.updateStatCodeURL = UPDATE_URL_STAT_CODE_LOCAL;
       this.updateStatDatePointersURL = UPDATE_URL_STAT_DATE_POINTERS_LOCAL;
@@ -523,8 +531,19 @@ marketStats.core.updateServerURLs = function (serverLocation) {
       this.updateREMarketMonthlyReportURL = UPDATE_URL_RE_MARKET_MONTHLY_REPORT_LOCAL;
       console.log(`Change Server URL to Local : ${SAVE_URL_LOCAL}`);
       break;
+    case "local_multisites":
+      this.saveURL = SAVE_URL_LOCAL_MULTISITES; // save the stat data to wp_pid_market locally
+      this.saveURLOfAllMetrics = SAVE_URL_LOCAL_OF_ALL_METRICS_MULTISITES;
+      this.searchStatCodeURL = SEARCH_URL_STAT_CODE_LOCAL_MULTISITES;
+      this.updateStatCodeURL = UPDATE_URL_STAT_CODE_LOCAL_MULTISITES;
+      this.updateStatDatePointersURL = UPDATE_URL_STAT_DATE_POINTERS_LOCAL_MULTISITES;
+      this.updateREMarketPivotURL = UPDATE_URL_RE_MARKET_PIVOT_LOCAL_MULTISITES;
+      this.updateREMarketMonthlyReportURL = UPDATE_URL_RE_MARKET_MONTHLY_REPORT_LOCAL_MULTISITES;
+      console.log(`Change Server URL to Local : ${SAVE_URL_LOCAL_MULTISITES}`);
+      break;
     case "remote":
       this.saveURL = SAVE_URL_REMOTE; // save the stat data to wp_pid_market live (remote)
+      this.saveURLOfAllMetrics = SAVE_URL_REMOTE_OF_ALL_METRICS; // save the stat data to wp_pid_market live (remote)
       this.searchStatCodeURL = SEARCH_URL_STAT_CODE_REMOTE;
       this.updateStatCodeURL = UPDATE_URL_STAT_CODE_REMOTE;
       this.updateStatDatePointersURL = UPDATE_URL_STAT_DATE_POINTERS_REMOTE;

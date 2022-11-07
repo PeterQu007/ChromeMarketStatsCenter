@@ -7,6 +7,9 @@
   "host_permissions": [
     "https://statscentre.rebgv.org/stats/market*",
     "http://localhost/pidrealty4/wp-content/themes/realhomes-child-3/db/*",
+    "http://localhost/pidhomes/wp-content/themes/realhomes-child-3/db/*",
+    "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/*",
+    "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/*",
     "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/*"
   ],
   "icons": {

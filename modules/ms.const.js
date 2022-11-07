@@ -1,25 +1,53 @@
 // URL for saving REBGV stat data
-const SAVE_URL_LOCAL = "http://localhost/pidrealty4/wp-content/themes/realhomes-child-3/db/saveStatData.php";
+/**
+
+ *H 注释:
+ *- http://localhost/pidrealty4/wp-content/themes/realhomes-child-3/db/saveStatDataOfAllMetrics.php
+ *- 上面的请求连接, 在服务器上的SERVER_NAME的结果会是 localhost
+ *- $_SERVER['SERVER_NAME'] => localhost
+ *- 必须改为: http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/saveStatDataOfAllMetrics.php
+ *- http://localhost/pidhomes/wp-content/themes/realhomes-child-3/db/saveStatDataOfAllMetrics.php
+ *- 上面的链接, 必须改为: http://pidhomes.local/wp-content/themes/realhomes-child-3/db/saveStatDataOfAllMetrics.php
+ */
+
+const SAVE_URL_LOCAL = "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/saveStatData.php";
+const SAVE_URL_LOCAL_OF_ALL_METRICS =
+  "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/saveStatDataOfAllMetrics.php";
 const SAVE_URL_REMOTE = "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/saveStatData.php";
+const SAVE_URL_REMOTE_OF_ALL_METRICS =
+  "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/saveStatDataOfAllMetrics.php";
 const SEARCH_URL_STAT_CODE_LOCAL =
-  "http://localhost/pidrealty4/wp-content/themes/realhomes-child-3/db/searchStatCode.php";
+  "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/searchStatCode.php";
 const SEARCH_URL_STAT_CODE_REMOTE = "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/searchStatCode.php";
 const UPDATE_URL_STAT_CODE_LOCAL =
-  "http://localhost/pidrealty4/wp-content/themes/realhomes-child-3/db/updateStatCode.php";
+  "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/updateStatCode.php";
 const UPDATE_URL_STAT_CODE_REMOTE = "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/updateStatCode.php";
 const UPDATE_URL_STAT_DATE_POINTERS_LOCAL =
-  "http://localhost/pidrealty4/wp-content/themes/realhomes-child-3/db/updateStatDatePointers.php";
+  "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/updateStatDatePointers.php";
 const UPDATE_URL_STAT_DATE_POINTERS_REMOTE =
   "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/updateStatDatePointers.php";
 const UPDATE_URL_RE_MARKET_PIVOT_LOCAL =
-  "http://localhost/pidrealty4/wp-content/themes/realhomes-child-3/db/updateREMarketPivotTable.php";
+  "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/updateREMarketPivotTable.php";
 const UPDATE_URL_RE_MARKET_PIVOT_REMOTE =
   "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/updateREMarketPivotTable.php";
 const UPDATE_URL_RE_MARKET_MONTHLY_REPORT_LOCAL =
-  "http://localhost/pidrealty4/wp-content/themes/realhomes-child-3/db/updateREMarketMonthlyReportData.php";
+  "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/updateREMarketMonthlyReportData.php";
 const UPDATE_URL_RE_MARKET_MONTHLY_REPORT_REMOTE =
   "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/updateREMarketMonthlyReportData.php";
-
+//- 为本地 pidhomes.local 增加一组URL
+const SAVE_URL_LOCAL_MULTISITES = "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/saveStatData.php";
+const SAVE_URL_LOCAL_OF_ALL_METRICS_MULTISITES =
+  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/saveStatDataOfAllMetrics.php";
+const SEARCH_URL_STAT_CODE_LOCAL_MULTISITES =
+  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/searchStatCode.php";
+const UPDATE_URL_STAT_CODE_LOCAL_MULTISITES =
+  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/updateStatCode.php";
+const UPDATE_URL_STAT_DATE_POINTERS_LOCAL_MULTISITES =
+  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/updateStatDatePointers.php";
+const UPDATE_URL_RE_MARKET_PIVOT_LOCAL_MULTISITES =
+  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/updateREMarketPivotTable.php";
+const UPDATE_URL_RE_MARKET_MONTHLY_REPORT_LOCAL_MULTISITES =
+  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/updateREMarketMonthlyReportData.php";
 // ERROR MESSAGES
 const ERROR_MESSAGE_NO_DATA = "Warning: No StatsData, Try Again!";
 const ERROR_MESSAGE_DATA_FATAL = "Fatal Error: StatsData Server Failed";

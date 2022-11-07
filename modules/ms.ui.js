@@ -19,7 +19,7 @@ marketStats.ui = class {
     // Set Data Period
     this.dataPeriod = STATS_PERIODS.max_update;
     // Add Core Functionality to the Class
-    this.mscore = new marketStats.core(SAVE_URL_LOCAL);
+    this.mscore = new marketStats.core();
 
     // read monthly update status:
     chrome.storage.local.get(["iAreaCodePointer", "areaQuantityEveryUpdate"], (xInfo) => {
@@ -55,10 +55,16 @@ marketStats.ui.setup = function () {
   let htmlSaveForm = $(`<form name="pidSaveForm" style="display:block"></form`);
   let htmlSaveFieldSet = $(`<fieldset style="display: inline-block"></fieldset>`);
   let htmlRadioLocal = $(
-    `<input type="radio" id="pid_save_stat_local" class="SaveRadios" name="SaveRadios" value="save local" checked="checked">
+    `<input type="radio" id="pid_save_stat_local" class="SaveRadios" name="SaveRadios" value="save local" >
          <label for="pid_save_stat_local" class="SaveRadios">Save Local</label>
         `
   );
+  let htmlRadioLocal_multisites = $(
+    `<input type="radio" id="pid_save_stat_local_multisites" class="SaveRadios" name="SaveRadios" value="save local multisites" checked="checked">
+         <label for="pid_save_stat_local_multisites" class="SaveRadios">Save Local MS</label>
+        `
+  );
+
   let htmlRadioRemote = $(
     `<input type="radio" id="pid_save_stat_remote" class="SaveRadios" name="SaveRadios" value="save remote">
          <label for="pid_save_stat_remote" class="SaveRadios">Save Remote</label>
@@ -153,6 +159,9 @@ marketStats.ui.setup = function () {
   let htmlButtonMonthlyReportData = $(`<input type="button" id="pid_monthly_report_data" value="Monthly Report Data">`);
 
   if ($("#pid_save_radios").length == 0) {
+    let htmlFormRow0 = $(`<div class = "formrow"></div>`);
+    htmlFormRow0.append(htmlRadioLocal_multisites);
+    htmlSaveFieldSet.append(htmlFormRow0);
     let htmlFormRow1 = $(`<div class = "formrow"></div>`);
     htmlFormRow1.append(htmlRadioLocal);
     htmlSaveFieldSet.append(htmlFormRow1);
@@ -241,11 +250,15 @@ marketStats.ui.events.onChange.ServerLocation = function () {
       switch (e.target.value.trim()) {
         case "save local":
           this.mscore.updateServerURLs("local");
-          console.log(`Set Server URL to Local : ${this.mscore.saveURL}`);
+          // console.log(`Set Server URL to Local : ${this.mscore.saveURL}`);
+          break;
+        case "save local multisites":
+          this.mscore.updateServerURLs("local_multisites");
+          // console.log(`Set Server URL to Local : ${this.mscore.saveURL}`);
           break;
         case "save remote":
           this.mscore.updateServerURLs("remote");
-          console.log(`Set Server URL to Remote : ${this.mscore.saveURL}`);
+          // console.log(`Set Server URL to Remote : ${this.mscore.saveURL}`);
           break;
       }
     });

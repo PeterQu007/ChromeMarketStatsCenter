@@ -16,11 +16,9 @@ const SAVE_URL_LOCAL_OF_ALL_METRICS =
 const SAVE_URL_REMOTE = "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/saveStatData.php";
 const SAVE_URL_REMOTE_OF_ALL_METRICS =
   "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/saveStatDataOfAllMetrics.php";
-const SEARCH_URL_STAT_CODE_LOCAL =
-  "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/searchStatCode.php";
+const SEARCH_URL_STAT_CODE_LOCAL = "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/searchStatCode.php";
 const SEARCH_URL_STAT_CODE_REMOTE = "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/searchStatCode.php";
-const UPDATE_URL_STAT_CODE_LOCAL =
-  "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/updateStatCode.php";
+const UPDATE_URL_STAT_CODE_LOCAL = "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/updateStatCode.php";
 const UPDATE_URL_STAT_CODE_REMOTE = "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/updateStatCode.php";
 const UPDATE_URL_STAT_DATE_POINTERS_LOCAL =
   "http://pidrealty4.local/wp-content/themes/realhomes-child-3/db/updateStatDatePointers.php";
@@ -35,19 +33,21 @@ const UPDATE_URL_RE_MARKET_MONTHLY_REPORT_LOCAL =
 const UPDATE_URL_RE_MARKET_MONTHLY_REPORT_REMOTE =
   "https://pidhomes.ca/wp-content/themes/realhomes-child-3/db/updateREMarketMonthlyReportData.php";
 //- 为本地 pidhomes.local 增加一组URL
-const SAVE_URL_LOCAL_MULTISITES = "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/saveStatData.php";
+const SAVE_URL_LOCAL_MULTISITES = "http://pidhomes.local/wp-content/themes/realhomes-child-4(dev)/db/saveStatData.php";
 const SAVE_URL_LOCAL_OF_ALL_METRICS_MULTISITES =
-  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/saveStatDataOfAllMetrics.php";
+  "http://pidhomes.local/wp-content/themes/realhomes-child-4(dev)/db/saveStatDataOfAllMetrics.php";
 const SEARCH_URL_STAT_CODE_LOCAL_MULTISITES =
-  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/searchStatCode.php";
+  //- "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/searchStatCode.php";
+  //- 改为: realhomes-child-4(dev)
+  "http://pidhomes.local/wp-content/themes/realhomes-child-4(dev)/db/searchStatCode.php";
 const UPDATE_URL_STAT_CODE_LOCAL_MULTISITES =
-  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/updateStatCode.php";
+  "http://pidhomes.local/wp-content/themes/realhomes-child-4(dev)/db/updateStatCode.php";
 const UPDATE_URL_STAT_DATE_POINTERS_LOCAL_MULTISITES =
-  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/updateStatDatePointers.php";
+  "http://pidhomes.local/wp-content/themes/realhomes-child-4(dev)/db/updateStatDatePointers.php";
 const UPDATE_URL_RE_MARKET_PIVOT_LOCAL_MULTISITES =
-  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/updateREMarketPivotTable.php";
+  "http://pidhomes.local/wp-content/themes/realhomes-child-4(dev)/db/updateREMarketPivotTable.php";
 const UPDATE_URL_RE_MARKET_MONTHLY_REPORT_LOCAL_MULTISITES =
-  "http://pidhomes.local/wp-content/themes/realhomes-child-3/db/updateREMarketMonthlyReportData.php";
+  "http://pidhomes.local/wp-content/themes/realhomes-child-4(dev)/db/updateREMarketMonthlyReportData.php";
 // ERROR MESSAGES
 const ERROR_MESSAGE_NO_DATA = "Warning: No StatsData, Try Again!";
 const ERROR_MESSAGE_DATA_FATAL = "Fatal Error: StatsData Server Failed";

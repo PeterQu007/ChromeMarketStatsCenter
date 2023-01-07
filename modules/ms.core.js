@@ -199,11 +199,38 @@ marketStats.core.updateSpecGroupStats = async function (statDataPeriod, areaCode
   }
 
   // 3. save the statData to MySql Database
-  //- 把数据保存到mySQL数据库
+  //- 把数据保存到live mySQL数据库
   try {
     // let saveDataResult = await this.saveStatData(statData); //= 保存单一的一组数据, 比如hpi
-    let saveDataResult = await this.saveStatDataOfAllMetrics(statDataByMetrics); //= 保存全部数据指标的数据, 包含hpi,asp,msp等等
-    console.log(`%c保存数据函数:${saveDataResult}`, "color: blue");
+    let saveDataResult = await this.saveStatDataOfAllMetrics(statDataByMetrics, SAVE_URL_REMOTE_OF_ALL_METRICS); //= 保存全部数据指标的数据, 包含hpi,asp,msp等等
+    console.log(`%c保存数据函数TO在线网站:${saveDataResult}`, "color: blue");
+  } catch (err) {
+    this.error = err;
+    console.error(areaCode, groupCode, err);
+    console.groupEnd();
+    throw err;
+  }
+
+  //- 把数据保存到local MuiltSites mySQL数据库
+  try {
+    // let saveDataResult = await this.saveStatData(statData); //= 保存单一的一组数据, 比如hpi
+    let saveDataResult = await this.saveStatDataOfAllMetrics(
+      statDataByMetrics,
+      SAVE_URL_LOCAL_OF_ALL_METRICS_MULTISITES
+    ); //= 保存全部数据指标的数据, 包含hpi,asp,msp等等
+    console.log(`%c保存数据函数TO本地多站:${saveDataResult}`, "color: lightblue");
+  } catch (err) {
+    this.error = err;
+    console.error(areaCode, groupCode, err);
+    console.groupEnd();
+    throw err;
+  }
+
+  //- 把数据保存到Local SingleSite mySQL数据库
+  try {
+    // let saveDataResult = await this.saveStatData(statData); //= 保存单一的一组数据, 比如hpi
+    let saveDataResult = await this.saveStatDataOfAllMetrics(statDataByMetrics, SAVE_URL_LOCAL_OF_ALL_METRICS); //= 保存全部数据指标的数据, 包含hpi,asp,msp等等
+    console.log(`%c保存数据函数TO本地单站:${saveDataResult}`, "color: darkblue");
   } catch (err) {
     this.error = err;
     console.error(areaCode, groupCode, err);
@@ -441,12 +468,12 @@ marketStats.core.saveStatData = async function (statDataInfo) {
   return Promise.resolve(saveStatDataResult);
 };
 
-marketStats.core.saveStatDataOfAllMetrics = async function (statDataInfoOfAllMetrics) {
+marketStats.core.saveStatDataOfAllMetrics = async function (statDataInfoOfAllMetrics, saveURL = null) {
   //- 函数的参数是一个数组
   //- 准备数据包
   let statDataInfo = {
     action: "Save Stat Data Of All Metrics",
-    saveURLOfAllMetrics: this.saveURLOfAllMetrics,
+    saveURLOfAllMetrics: saveURL ?? this.saveURLOfAllMetrics,
     statData: statDataInfoOfAllMetrics,
   };
   let saveStatDataResult = await chrome.runtime.sendMessage(statDataInfo);
